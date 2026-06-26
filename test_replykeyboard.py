@@ -8,7 +8,7 @@ from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # توکن ربات خود را وارد کنید
-TOKEN = ""
+TOKEN="8688349813:AAHqjsk1zLYf4M_9-YLpluOvJicHqG4qzvo"
 
 # تنظیم لاگ
 logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
