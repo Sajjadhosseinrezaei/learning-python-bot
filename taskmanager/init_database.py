@@ -7,7 +7,7 @@ def init_db():
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
 
-    # ویرگول‌های اضافی حذف شدند و کاما بین ستون‌ها اصلاح شد
+
     table_creation_query = """
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,7 +23,7 @@ def init_db():
     connect.close()
 
 
-# اضافه شدن کاربر و چت به ورودی‌ها و دستور مپینگ دیتابیس
+
 def create_task(title, status, user_id, chat_id):
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
@@ -43,7 +43,7 @@ def create_task(title, status, user_id, chat_id):
         connect.close()
 
 
-# حالا می‌توانی تسک‌ها را بر اساس یک چت خاص فیلتر کنی (برای ربات تلگرام عالی است)
+
 def retrieve_tasks(chat_id):
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
@@ -60,7 +60,7 @@ def retrieve_tasks(chat_id):
     return tasks
 
 
-# اضافه شدن فیلدها به آپدیت
+
 def update_task(id, title, status):
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
