@@ -1,5 +1,6 @@
 import os
-from init_database import init_db, create_task, retrieve_tasks, update_task, delete_task, get_all_tasks
+from init_database import init_db, create_task, retrieve_tasks, update_task, delete_task, get_all_tasks, search_task, \
+    get_state
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, ContextTypes, CommandHandler, ConversationHandler, MessageHandler, filters
 from dotenv import load_dotenv
@@ -150,7 +151,61 @@ async def get_u_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     return ConversationHandler.END
 
+S_TASK = 1
+async def start_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🔎 عبارت مورد نظر را وارد کن:")
+    return S_TASK
 
+
+async def get_search_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    search_text = update.message.text
+    user_id = update.message.from_user.id
+
+    # صدا زدن تابع دیتابیس (با پاس دادن متن سرچ و آیدی کاربر برای امنیت)
+    # نکته: مطمئن شو تابع دیتابیس رو طبق پیام قبلی اصلاح کردی تا status رو هم SELECT کنه
+    tasks = search_task(search_text, user_id)
+
+    # اگر نتیجه‌ای پیدا نشد
+    if not tasks:
+        await update.message.reply_text("❌ هیچ تسکی با این مشخصات پیدا نشد.")
+        return ConversationHandler.END
+
+    # ساخت متن خروجی برای نتایج یافت شده
+    response_text = ""
+    for task in tasks:
+        # فرض می‌کنیم دیتابیس به ترتیب این‌ها را برمی‌گرداند: (id, title, status)
+        task_id, title, status = task
+        response_text += f"{task_id} - {title} - {status}\n"
+
+    # ارسال نتایج به کاربر
+    await update.message.reply_text(response_text)
+
+    return ConversationHandler.END  # پایان گفتگو
+
+
+async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id
+
+    # ۱. گرفتن آمار تفکیکی از دیتابیس
+    stats_data = get_state(chat_id)
+
+    if not stats_data:
+        await update.message.reply_text("📋 هنوز هیچ تسکی در این چت ثبت نشده است.")
+        return
+
+    # ۲. محاسبه تعداد کل تسک‌ها (جمع زدن تعداد هر وضعیت)
+    total_tasks = sum(row[1] for row in stats_data)
+
+    # ۳. ساخت متن پیام خروجی
+    response_text = f"📊 **تعداد کل تسک‌ها:** {total_tasks}\n\n"
+
+    for status, count in stats_data:
+        # اگر وضعیت خالی نبود آن را اضافه کن
+        if status:
+            response_text += f"🔹 {status}: {count}\n"
+
+    # ۴. ارسال پیام به کاربر
+    await update.message.reply_text(response_text, parse_mode="Markdown")
 
 def main():
     init_db()
@@ -185,10 +240,27 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel_task)],
     )
+
+    search_conv_handler = ConversationHandler(
+        entry_points=[
+            CommandHandler("search", start_search)
+        ],
+        states={
+            S_TASK: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_search_query)
+            ]
+        },
+        fallbacks=[
+            CommandHandler("cancel", cancel_task)
+        ],
+    )
+
+    app.add_handler(search_conv_handler)
     app.add_handler(task_conv_handler)
     app.add_handler(task_delete_handler)
     app.add_handler(task_update_handler)
     app.add_handler(CommandHandler("tasks", get_all_tasks_user))
+    app.add_handler(CommandHandler("stats", show_stats))
     print("bot started...")
     app.run_polling()
 

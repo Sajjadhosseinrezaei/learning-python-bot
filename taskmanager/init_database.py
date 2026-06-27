@@ -130,4 +130,57 @@ def get_all_tasks(user_id, chat_id):
     return tasks
 
 
+def search_task(search, user_id):
+    connect = sqlite3.connect(DB_NAME)
+    cursor = connect.cursor()
+    tasks = []
+    try:
+        with connect:
+
+            query = """
+            SELECT id, title, status FROM tasks
+            WHERE title LIKE ? AND user_id = ?;
+            """
+
+            search_parm = f"%{search}%"
+            cursor.execute(query, (search_parm, user_id))
+            tasks = cursor.fetchall()
+
+    except sqlite3.Error as e:
+        print(f"خطایی رخ داد \n{e}")
+
+    finally:
+        cursor.close()
+        connect.close()
+
+    return tasks
+
+
+def get_state(chat_id):
+    connect = sqlite3.connect(DB_NAME)
+    cursor = connect.cursor()
+    stats = []
+    try:
+        with connect:
+
+            query = """
+            SELECT status, COUNT(*) 
+            FROM tasks
+            WHERE chat_id = ?
+            GROUP BY status;
+            """
+            cursor.execute(query, (chat_id,))
+            stats = cursor.fetchall()
+
+    except sqlite3.Error as e:
+        print(f"خطایی رخ داد \n{e}")
+    finally:
+        cursor.close()
+        connect.close()
+
+    return stats
+
+
+
+
 
