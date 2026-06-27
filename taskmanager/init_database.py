@@ -61,38 +61,73 @@ def retrieve_tasks(chat_id):
 
 
 
-def update_task(id, title, status):
+def update_task(id, user_id, title, status):
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
+    updated = False
     try:
         with connect:
             query = """
             UPDATE tasks
             SET title = ?, status = ?
-            WHERE id = ?;
+            WHERE id = ? and user_id = ?;
             """
-            cursor.execute(query, (title, status, id))
+            cursor.execute(query, (title, status, id, user_id))
+            if cursor.rowcount > 0:
+                updated = True
+
     except sqlite3.Error as e:
         print(f"خطایی رخ داد \n{e}")
 
     finally:
         cursor.close()
         connect.close()
+    return updated
 
 
-def delete_task(id):
+def delete_task(id, user_id):
     connect = sqlite3.connect(DB_NAME)
     cursor = connect.cursor()
+    is_deleted = False
     try:
         with connect:
             query = """
             DELETE FROM tasks
-            WHERE id = ?;
+            WHERE id = ? AND user_id = ?;
             """
-            cursor.execute(query, (id,))
+            cursor.execute(query, (id, user_id))
+
+            if cursor.rowcount > 0:
+                is_deleted = True
+
+    except sqlite3.Error as e:
+        print(f"خطایی رخ داد \n{e}")
+    finally:
+        cursor.close()
+        connect.close()
+
+    return is_deleted
+
+
+def get_all_tasks(user_id, chat_id):
+    connect = sqlite3.connect(DB_NAME)
+    cursor = connect.cursor()
+    tasks = []
+    try:
+        with connect:
+            query = """select id, title, status from tasks
+                    where user_id = ? and chat_id = ?;
+                    """
+            cursor.execute(query, (user_id, chat_id))
+            tasks = cursor.fetchall()
     except sqlite3.Error as e:
         print(f"خطایی رخ داد \n{e}")
 
     finally:
         cursor.close()
         connect.close()
+
+    return tasks
+
+
+
